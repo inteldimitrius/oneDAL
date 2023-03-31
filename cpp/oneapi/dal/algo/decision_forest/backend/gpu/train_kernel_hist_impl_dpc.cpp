@@ -2898,8 +2898,13 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
 
     sycl::event last_event;
 
+    std::cout << "kernel_hist_impl_dpc started. ctx.tree_count_=" << ctx.tree_count_
+        << ", ctx.tree_in_block_=" << ctx.tree_in_block_ << std::endl
+        << "--------------------" << std::endl;
+
     for (Index iter = 0; iter < ctx.tree_count_; iter += ctx.tree_in_block_) {
         Index iter_tree_count = std::min(ctx.tree_count_ - iter, ctx.tree_in_block_);
+        std::cout << "\tprocessing iter_tree_count=" << iter_tree_count << std::endl;
 
         Index node_count = iter_tree_count; // num of potential nodes to split on current tree level
         auto oob_row_count_list =
@@ -2968,8 +2973,9 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                 node_count); // oob_row_count_list and oob_rows_list are the output
             event.wait_and_throw();
         }
-
+        std::cout << "\tpreparing for first level are done. Start procesing for each level." << std::endl;
         for (Index level = 0; node_count > 0; ++level) {
+            std::cout << "\t\tProcessing: level=" << level << ", node_count=" << node_count << std::endl;
             auto node_list = level_node_lists[level];
             imp_data_t left_child_imp_data(queue_, ctx, node_count);
 
@@ -2985,6 +2991,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                 node_imp_decrease_list =
                     pr::ndarray<Float, 1>::empty(queue_, { node_count }, alloc::device);
             }
+            std::cout << "\t\tlist are generated. Computing best split." << std::endl;
             last_event = compute_best_split(ctx,
                                             full_data_nd_,
                                             response_nd_,
@@ -3000,7 +3007,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                                             node_count,
                                             { last_event });
             last_event.wait_and_throw();
-
+            std::cout << "\t\tcompute_best_split finished." << std::endl;
             tree_level_record_t level_record(queue_,
                                              node_list,
                                              imp_data_holder.get_data(level),
@@ -3027,6 +3034,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
             last_event.wait_and_throw();
 
             if (node_count_new) {
+                std::cout << "\t\t creating new level. node_count_new=" << node_count_new << std::endl;
                 //there are split nodes -> next level is required
                 node_count_new *= 2;
 
@@ -3097,12 +3105,13 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
             }
             last_event.wait_and_throw();
             node_count = node_count_new;
+            std::cout << "\t\tlevel=" << level <<" processing is finished." << std::endl;
         }
-
+        std::cout << "\tAll levels are processed. Adding block to model manager." << std::endl;
         last_event.wait_and_throw();
 
         model_manager.add_tree_block(level_records, bin_borders_host_, iter_tree_count);
-
+        std::cout << "\tBlock is added to manager." << std::endl;
         for (Index tree_idx = 0; tree_idx < iter_tree_count; ++tree_idx) {
             compute_results(ctx,
                             model_manager,
@@ -3120,8 +3129,9 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                             { last_event })
                 .wait_and_throw();
         }
+        std::cout << "\tprocessing block is finished." << std::endl << std::endl;
     }
-
+    std::cout << "Finilizing results." << std::endl;
     // Finalize results
     if (ctx.oob_err_required_ || ctx.oob_err_obs_required_) {
         pr::ndarray<Float, 1> res_oob_err;
@@ -3148,7 +3158,8 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
         res.set_var_importance(
             homogen_table::wrap(res_var_imp_host.flatten(), 1, ctx.column_count_));
     }
-
+    std::cout << "kernel_hist_impl_dpc is finished" << std::endl;
+    std::cout << "--------------------------------" << std::endl;
     return res.set_model(model_manager.get_model());
 }
 
