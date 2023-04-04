@@ -88,7 +88,7 @@ sycl::event train_service_kernels<Float, Bin, Index, Task>::get_split_node_count
     auto split_node_count_buf = pr::ndarray<Index, 1>::empty(queue_, { 1 }, alloc::device);
     Index* split_node_count_ptr = split_node_count_buf.get_mutable_data();
 
-    auto krn_local_size = preferable_sbg_size_;
+    auto krn_local_size = bk::device_max_sg_size(queue_);//preferable_sbg_size_;
     const sycl::nd_range<1> nd_range =
         bk::make_multiple_nd_range_1d(krn_local_size, krn_local_size);
 
@@ -151,7 +151,7 @@ train_service_kernels<Float, Bin, Index, Task>::calculate_left_child_row_count_o
     Index* node_list_ptr = node_list.get_mutable_data();
     const Index* tree_order_ptr = tree_order.get_data();
 
-    auto krn_local_size = preferable_partition_group_size_;
+    auto krn_local_size = bk::device_max_wg_size(queue_); // preferable_partition_group_size_;
     const sycl::nd_range<1> nd_range =
         bk::make_multiple_nd_range_1d(preferable_partition_groups_count_ * krn_local_size,
                                       krn_local_size);
@@ -278,7 +278,7 @@ sycl::event train_service_kernels<Float, Bin, Index, Task>::do_level_partition_b
 
     bool distr_mode = ctx.distr_mode_;
 
-    auto krn_local_size = preferable_partition_group_size_;
+    auto krn_local_size = bk::device_max_wg_size(queue_); // preferable_partition_group_size_;
     const sycl::nd_range<1> nd_range =
         bk::make_multiple_nd_range_1d(preferable_partition_groups_count_ * krn_local_size,
                                       krn_local_size);
@@ -403,7 +403,8 @@ sycl::event train_service_kernels<Float, Bin, Index, Task>::update_mdi_var_impor
     ONEDAL_ASSERT(node_imp_decrease_list.get_count() == node_count);
     ONEDAL_ASSERT(res_var_imp.get_count() == data_column_count);
 
-    const Index krn_local_size = bk::down_pow2(std::min(preferable_group_size_, node_count));
+    const Index wg_size = bk::device_max_wg_size(queue_);
+    const Index krn_local_size = bk::down_pow2(std::min(wg_size, node_count));
 
     const Index* node_list_ptr = node_list.get_data();
     const Float* node_imp_decrease_list_ptr = node_imp_decrease_list.get_data();

@@ -958,7 +958,7 @@ sycl::event train_kernel_hist_impl<Float, Bin, Index, Task>::compute_initial_sum
     // num of attributes for node
     const Index node_prop_count = impl_const_t::node_prop_count_;
 
-    auto local_size = ctx.preferable_group_size_;
+    auto local_size =  bk::device_max_wg_size(queue_); //ctx.preferable_group_size_;
     const sycl::nd_range<2> nd_range =
         bk::make_multiple_nd_range_2d({ local_size, node_count }, { local_size, 1 });
 
@@ -1031,7 +1031,7 @@ sycl::event train_kernel_hist_impl<Float, Bin, Index, Task>::compute_initial_sum
     // num of attributes for node
     const Index node_prop_count = impl_const_t::node_prop_count_;
 
-    auto local_size = ctx.preferable_group_size_;
+    auto local_size =  bk::device_max_wg_size(queue_); // ctx.preferable_group_size_;
     const sycl::nd_range<2> nd_range =
         bk::make_multiple_nd_range_2d({ local_size, node_count }, { local_size, 1 });
 
@@ -1845,7 +1845,7 @@ sycl::event train_kernel_hist_impl<Float, Bin, Index, Task>::compute_partial_his
 
     hist_type_t* partial_histogram_ptr = part_hist_list.get_mutable_data();
 
-    auto local_size = ctx.preferable_local_size_for_part_hist_kernel_;
+    auto local_size = bk::device_max_wg_size(queue_); // ctx.preferable_local_size_for_part_hist_kernel_;
     const sycl::nd_range<2> nd_range =
         bk::make_multiple_nd_range_2d({ part_hist_count * local_size, node_count },
                                       { local_size, 1 });
@@ -1939,7 +1939,7 @@ sycl::event train_kernel_hist_impl<Float, Bin, Index, Task>::compute_partial_cou
 
     Float* partial_histogram_ptr = part_hist_list.get_mutable_data();
 
-    auto local_size = ctx.preferable_local_size_for_part_hist_kernel_;
+    auto local_size = bk::device_max_wg_size(queue_); // ctx.preferable_local_size_for_part_hist_kernel_;
     const sycl::nd_range<2> nd_range =
         bk::make_multiple_nd_range_2d({ part_hist_count * local_size, node_count },
                                       { local_size, 1 });
@@ -2038,7 +2038,7 @@ sycl::event train_kernel_hist_impl<Float, Bin, Index, Task>::compute_partial_sum
 
     Float* partial_histogram_ptr = part_hist_list.get_mutable_data();
 
-    auto local_size = ctx.preferable_local_size_for_part_hist_kernel_;
+    auto local_size = bk::device_max_wg_size(queue_); // ctx.preferable_local_size_for_part_hist_kernel_;
     const sycl::nd_range<2> nd_range =
         bk::make_multiple_nd_range_2d({ part_hist_count * local_size, node_count },
                                       { local_size, 1 });
