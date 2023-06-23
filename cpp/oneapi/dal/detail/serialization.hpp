@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include "oneapi/dal/detail/hash_map.hpp"
+#include "daal/include/services/library_version_info.h"
 
 #define __ONEDAL_REGISTER_SERIALIZABLE__VAR2__(name, unique) name##unique
 #define __ONEDAL_REGISTER_SERIALIZABLE__VAR__(unique) \
@@ -173,7 +174,11 @@ class input_archive : public archive_base<input_archive_iface> {
 
 public:
     template <typename Archive>
-    explicit input_archive(Archive& archive) : base_t(new input_archive_impl<Archive>{ archive }) {}
+    explicit input_archive(Archive& archive) : base_t(new input_archive_impl<Archive>{ archive }) {
+        process(major_version);
+        process(minor_version);
+        process(update_version);
+    }
 
     void prologue() {
         get_impl().prologue();
@@ -203,7 +208,24 @@ public:
         return value;
     }
 
+    int get_major_version() {
+        return major_version;
+    }
+
+    int get_minor_version() {
+        return minor_version;
+    }
+
+    int get_update_version() {
+        return update_version;
+    }
+
+
 private:
+    int major_version;
+    int minor_version;
+    int update_version;
+
     template <typename T, enable_if_trivially_serializable_t<T>* = nullptr>
     void process(T& value) {
         using trivial_t = trivial_serialization_type_t<T>;
@@ -230,7 +252,19 @@ class output_archive : public archive_base<output_archive_iface> {
 public:
     template <typename Archive>
     explicit output_archive(Archive& archive)
-            : base_t(new output_archive_impl<Archive>{ archive }) {}
+            : base_t(new output_archive_impl<Archive>{ archive }) {
+        // Serialize version
+        serialize_version();
+    }
+
+    void serialize_version() {
+        int value_count = 3;
+        int version[value_count] = {__INTEL_DAAL__, __INTEL_DAAL_MINOR__, __INTEL_DAAL_UPDATE__};
+
+        for (int index = 0; index < value_count; ++index) {
+            process(version[index]);
+        }
+    }
 
     void prologue() {
         get_impl().prologue();

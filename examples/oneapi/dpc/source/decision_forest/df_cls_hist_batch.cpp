@@ -23,6 +23,7 @@
 
 #include "example_util/utils.hpp"
 #include "oneapi/dal/exceptions.hpp"
+#include "daal/include/services/library_version_info.h"
 
 namespace dal = oneapi::dal;
 namespace df = dal::decision_forest;
@@ -39,6 +40,9 @@ void run(sycl::queue& q) {
 
     const auto x_test = dal::read<dal::table>(q, dal::csv::data_source{ test_data_file_name });
     const auto y_test = dal::read<dal::table>(q, dal::csv::data_source{ test_response_file_name });
+
+    daal::services::LibraryVersionInfo info;
+    std::cout << "info.majorVersion=" << info.majorVersion << ", info.minorVersion=" << info.minorVersion << std::endl;
 
     const auto df_desc =
         df::descriptor<float, df::method::hist, df::task::classification>{}
