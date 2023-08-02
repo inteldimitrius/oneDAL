@@ -178,9 +178,8 @@ public:
         process(major_version);
         process(minor_version);
         process(update_version);
-        int version = major_version * 10000 + minor_version * 100 + update_version;
-        if (INTEL_DAAL_VERSION >= version) {
-            // WARNING: Your archive is created by older version of oneDAL
+        if (__INTEL_DAAL__ >= version) {
+            throw oneapi::dal::internal_error{ error_messages::major_version_old() };
         }
     }
 
@@ -212,23 +211,22 @@ public:
         return value;
     }
 
-    int get_major_version() {
+    std::uint32_t get_major_version() {
         return major_version;
     }
 
-    int get_minor_version() {
+    std::uint32_t get_minor_version() {
         return minor_version;
     }
 
-    int get_update_version() {
+    std::uint32_t get_update_version() {
         return update_version;
     }
 
-
 private:
-    int major_version;
-    int minor_version;
-    int update_version;
+    std::uint32_t major_version;
+    std::uint32_t minor_version;
+    std::uint32_t update_version;
 
     template <typename T, enable_if_trivially_serializable_t<T>* = nullptr>
     void process(T& value) {
@@ -262,8 +260,10 @@ public:
     }
 
     void serialize_version() {
-        int value_count = 3;
-        int version[value_count] = {__INTEL_DAAL__, __INTEL_DAAL_MINOR__, __INTEL_DAAL_UPDATE__};
+        std::uint32_t value_count = 3;
+        std::uint32_t version[value_count] = { __INTEL_DAAL__,
+                                               __INTEL_DAAL_MINOR__,
+                                               __INTEL_DAAL_UPDATE__ };
 
         for (int index = 0; index < value_count; ++index) {
             process(version[index]);

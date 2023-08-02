@@ -42,6 +42,7 @@ MSG(unsupported_data_layout, "Unsupported data layout")
 MSG(unsupported_data_type, "Requested data type is not supported")
 MSG(unsupported_device_type, "Requested device type is not supported")
 MSG(small_data_block, "Data block size is smaller than expected")
+MSG(major_version_old, "Model serialized using older major version of oneDAL")
 MSG(spmd_version_of_algorithm_is_not_implemented,
     "SPMD version of the algorithm is not implemented")
 MSG(spmd_version_of_algorithm_is_not_implemented_for_this_device,
