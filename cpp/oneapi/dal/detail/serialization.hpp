@@ -178,6 +178,10 @@ public:
         process(major_version);
         process(minor_version);
         process(update_version);
+        int version = major_version * 10000 + minor_version * 100 + update_version;
+        if (INTEL_DAAL_VERSION >= version) {
+            // WARNING: Your archive is created by older version of oneDAL
+        }
     }
 
     void prologue() {
