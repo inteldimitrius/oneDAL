@@ -235,7 +235,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group(const infer_context
 
     Float* obs_cls_hist_list_ptr = obs_response_list.get_mutable_data();
 
-    auto local_size = ctx.max_local_size;
+    auto local_size = be::device_max_wg_size;
     const sycl::nd_range<2> nd_range =
         be::make_multiple_nd_range_2d({ ctx.row_block_count * local_size, ctx.tree_in_group_count },
                                       { local_size, 1 });
