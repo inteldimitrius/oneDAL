@@ -194,14 +194,14 @@ void train_kernel_hist_impl<Float, Bin, Index, Task>::init_params(train_context_
     ctx.oob_err_required_ = check_mask_flag(emm, error_metric_mode::out_of_bag_error);
     ctx.oob_err_obs_required_ =
         check_mask_flag(emm, error_metric_mode::out_of_bag_error_per_observation);
-
+    std::cout << "most of ctx variables are set" << std::endl;
     // init ftr -> bins map and related params
     indexed_features<Float, Bin, Index> ind_ftrs(queue_,
                                                  comm_,
                                                  desc.get_min_bin_size(),
                                                  desc.get_max_bins());
     ind_ftrs(data).wait_and_throw();
-
+    std::cout << "Indexed features are done" << std::endl;
     ctx.total_bin_count_ = ind_ftrs.get_total_bin_count();
     full_data_nd_ = ind_ftrs.get_full_data();
     ftr_bin_offsets_nd_ = ind_ftrs.get_bin_offsets();
@@ -220,6 +220,7 @@ void train_kernel_hist_impl<Float, Bin, Index, Task>::init_params(train_context_
     }
 
     response_host_ = response_nd_.to_host(queue_);
+    std::cout << "data is allocated and ready for use" << std::endl;
 
     // calculating the maximal number of bins for feature among all features
     ctx.max_bin_count_among_ftrs_ = 0;
@@ -310,7 +311,7 @@ void train_kernel_hist_impl<Float, Bin, Index, Task>::init_params(train_context_
         // not enough memory even for one tree
         throw domain_error(msg::not_enough_memory_to_build_one_tree());
     }
-
+    std::cout << "ctx.tree_in_block=" << ctx.tree_in_block_ << std::endl;
     ctx.tree_in_block_ = std::min(ctx.tree_count_, ctx.tree_in_block_);
 
     available_global_mem_size =
