@@ -18,6 +18,7 @@
 #include "oneapi/dal/table/row_accessor.hpp"
 #include "oneapi/dal/detail/profiler.hpp"
 
+#include <iostream>
 #include "oneapi/dal/algo/decision_forest/backend/gpu/infer_kernel_impl.hpp"
 
 namespace oneapi::dal::decision_forest::backend {
@@ -97,7 +98,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group_weighted(
     const model_manager_t& mng,
     const be::event_vector& deps) {
     ONEDAL_PROFILER_TASK(predict_by_tree_group_weighted, queue_);
-
+    std::cout << "predict_by_tree_group_weighted()" << std::endl;
     const Index max_tree_size = mng.get_max_tree_size();
 
     auto [ftr_idx_list, lch_idx_or_class_id_list, ftr_value_list] = mng.get_serialized_data();
@@ -130,7 +131,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group_weighted(
 
     Float* obs_cls_hist_list_ptr = obs_response_list.get_mutable_data();
 
-    auto local_size = ctx.max_local_size;
+    const std::int32_t local_size =  1024;// ctx.max_local_size;
     const sycl::nd_range<2> nd_range =
         be::make_multiple_nd_range_2d({ ctx.row_block_count * local_size, ctx.tree_in_group_count },
                                       { local_size, 1 });
@@ -201,7 +202,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group(const infer_context
                                                              const model_manager_t& mng,
                                                              const be::event_vector& deps) {
     ONEDAL_PROFILER_TASK(predict_by_tree_group, queue_);
-
+    std::cout << "predict_by_tree_group()" << std::endl;
     constexpr bool is_classification = std::is_same_v<Task, task::classification>;
     const Index max_tree_size = mng.get_max_tree_size();
 
@@ -235,7 +236,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group(const infer_context
 
     Float* obs_cls_hist_list_ptr = obs_response_list.get_mutable_data();
 
-    const std::int32_t local_size = static_cast<std::int32_t>(be::device_max_wg_size(queue_));
+    const std::int32_t local_size = 1024;
     const sycl::nd_range<2> nd_range =
         be::make_multiple_nd_range_2d({ ctx.row_block_count * local_size, ctx.tree_in_group_count },
                                       { local_size, 1 });
@@ -310,7 +311,7 @@ infer_kernel_impl<Float, Index, Task>::reduce_tree_group_response(
     const pr::ndview<Float, 1>& obs_response_list,
     const be::event_vector& deps) {
     ONEDAL_PROFILER_TASK(reduce_tree_group_response, queue_);
-
+    std::cout << "reduce_tree_group_response()" << std::endl;
     constexpr bool is_classification = std::is_same_v<Task, task::classification>;
 
     Index response_count = ctx.row_count;
@@ -413,7 +414,7 @@ infer_kernel_impl<Float, Index, Task>::determine_winner(const infer_context_t& c
                                                         const pr::ndview<Float, 1>& response_list,
                                                         const be::event_vector& deps) {
     ONEDAL_PROFILER_TASK(determine_winner, queue_);
-
+    std::cout << "determine_winner()" << std::endl;
     ONEDAL_ASSERT(response_list.get_count() == ctx.row_count * ctx.class_count);
     auto winner_list = pr::ndarray<Float, 1>::empty(queue_, { ctx.row_count }, alloc::device);
 
@@ -467,7 +468,7 @@ infer_result<Task> infer_kernel_impl<Float, Index, Task>::operator()(const descr
     infer_context_t ctx;
     init_params(ctx, desc, model, data);
     model_manager_t model_mng(queue_, ctx, model);
-
+    std::cout << "operator()" << std::endl;
     result_t res;
 
     const auto data_nd = pr::table2ndarray<Float>(queue_, data, alloc::device);
@@ -521,7 +522,7 @@ infer_result<Task> infer_kernel_impl<Float, Index, Task>::operator()(const descr
     if (comm_.get_rank_count() > 1) {
         comm_.wait_for_exception_handling();
     }
-
+    std::cout << "operator() FINISHED" << std::endl;
     return res;
 }
 
