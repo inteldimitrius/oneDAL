@@ -410,7 +410,7 @@ sycl::event indexed_features<Float, Bin, Index>::operator()(const table& tbl,
     row_count_ = de::integral_cast<Index>(tbl.get_row_count());
     column_count_ = de::integral_cast<Index>(tbl.get_column_count());
     total_bins_ = 0;
-
+    std::cout << "indexed features: integral casts. row_count=" << row_count_ << ", column_count=" << column_count_ << std::endl;
     const auto data_nd_ = pr::table2ndarray<Float>(queue_, tbl, sycl::usm::alloc::device);
     std::cout << "indexed features: table create" << std::endl;
     //allocating buffers
