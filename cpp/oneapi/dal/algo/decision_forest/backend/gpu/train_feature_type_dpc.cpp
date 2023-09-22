@@ -298,7 +298,7 @@ indexed_features<Float, Bin, Index>::gather_bin_borders_distr(
         ONEDAL_PROFILER_TASK(bcast_bin_borders, queue_);
         comm_.bcast(queue_, bin_borders_nd_device.get_mutable_data(), bin_count).wait();
     }
-
+    std::cout << "gather_bin_borders_distr() finished" << std::endl;
     return std::make_tuple(bin_borders_nd_device, bin_count, last_event);
 }
 
@@ -406,30 +406,33 @@ sycl::event indexed_features<Float, Bin, Index>::operator()(const table& tbl,
     if (tbl.get_column_count() > de::limits<Index>::max()) {
         throw domain_error(dal::detail::error_messages::invalid_range_of_columns());
     }
-
+    std::cout << "indexed features: checks passed" << std::endl;
     row_count_ = de::integral_cast<Index>(tbl.get_row_count());
     column_count_ = de::integral_cast<Index>(tbl.get_column_count());
     total_bins_ = 0;
 
     const auto data_nd_ = pr::table2ndarray<Float>(queue_, tbl, sycl::usm::alloc::device);
+    std::cout << "indexed features: table create" << std::endl;
     //allocating buffers
     full_data_nd_ =
         pr::ndarray<Bin, 2>::empty(queue_, { row_count_, column_count_ }, sycl::usm::alloc::device);
 
     entries_.resize(column_count_);
+    std::cout << "indexed features: buffer allocated" << std::endl;
 
     auto values_nd = pr::ndarray<Float, 1>::empty(queue_, { row_count_ }, sycl::usm::alloc::device);
     auto indices_nd =
         pr::ndarray<Index, 1>::empty(queue_, { row_count_ }, sycl::usm::alloc::device);
     std::vector<pr::ndarray<Bin, 1>> column_bin_vec_;
     column_bin_vec_.resize(column_count_);
-
+    std::cout << "indexed features: indices and values created" << std::endl;
     for (Index i = 0; i < column_count_; i++) {
         column_bin_vec_[i] =
             pr::ndarray<Bin, 1>::empty(queue_, { row_count_ }, sycl::usm::alloc::device);
     }
 
     pr::radix_sort_indices_inplace<Float, Index> sort{ queue_ };
+    std::cout << "indexed features: radix sort" << std::endl;
 
     sycl::event last_event;
 
@@ -439,7 +442,7 @@ sycl::event indexed_features<Float, Bin, Index>::operator()(const table& tbl,
         last_event =
             compute_bins(values_nd, indices_nd, column_bin_vec_[i], entries_[i], i, { last_event });
     }
-
+    std::cout << "indexed features: compute bins" << std::endl;
     last_event.wait_and_throw();
 
     auto bin_offsets_nd_host = pr::ndarray<Index, 1>::empty({ column_count_ + 1 });
@@ -453,7 +456,7 @@ sycl::event indexed_features<Float, Bin, Index>::operator()(const table& tbl,
         entries_[i].offset_ = total;
         total += entries_[i].bin_count_;
     }
-
+    std::cout << "indexed features: store column" << std::endl;
     bin_offsets[column_count_] = total;
     total_bins_ = total;
 
