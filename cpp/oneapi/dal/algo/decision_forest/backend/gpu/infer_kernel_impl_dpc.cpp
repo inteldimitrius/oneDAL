@@ -18,6 +18,7 @@
 #include "oneapi/dal/table/row_accessor.hpp"
 #include "oneapi/dal/detail/profiler.hpp"
 
+#include <iostream>
 #include "oneapi/dal/algo/decision_forest/backend/gpu/infer_kernel_impl.hpp"
 
 namespace oneapi::dal::decision_forest::backend {
@@ -37,6 +38,7 @@ template <typename Float, typename Index, typename Task>
 void infer_kernel_impl<Float, Index, Task>::validate_input(const descriptor_t& desc,
                                                            const model_t& model,
                                                            const table& data) const {
+    std::cout << "validate_input()" << std::endl;
     if (data.get_row_count() == 0) {
         throw domain_error(msg::invalid_range_of_rows());
     }
@@ -63,6 +65,7 @@ void infer_kernel_impl<Float, Index, Task>::init_params(infer_context_t& ctx,
                                                         const descriptor_t& desc,
                                                         const model_t& model,
                                                         const table& data) const {
+    std::cout << "init_params()" << std::endl;
     if constexpr (std::is_same_v<Task, task::classification>) {
         ctx.class_count = de::integral_cast<Index>(desc.get_class_count());
         ctx.voting_mode = desc.get_voting_mode();
@@ -101,6 +104,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group_weighted(
     const model_manager_t& mng,
     const be::event_vector& deps) {
     ONEDAL_PROFILER_TASK(predict_by_tree_group_weighted, queue_);
+    std::cout << "predict_by_tree_group_weighted()" << std::endl;
 
     const Index max_tree_size = mng.get_max_tree_size();
 
@@ -134,7 +138,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group_weighted(
 
     Float* obs_cls_hist_list_ptr = obs_response_list.get_mutable_data();
 
-    auto local_size = ctx.max_local_size;
+    auto local_size = 1024; // ctx.max_local_size;
     const sycl::nd_range<2> nd_range =
         be::make_multiple_nd_range_2d({ ctx.row_block_count * local_size, ctx.tree_in_group_count },
                                       { local_size, 1 });
@@ -208,7 +212,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group(const infer_context
 
     constexpr bool is_classification = std::is_same_v<Task, task::classification>;
     const Index max_tree_size = mng.get_max_tree_size();
-
+    std::cout << "predict_by_tree_group()" << std::endl;
     auto [ftr_idx_list, lch_idx_or_class_id_list, ftr_value_list] = mng.get_serialized_data();
 
     ONEDAL_ASSERT(data.get_count() == ctx.row_count * ctx.column_count);
@@ -239,7 +243,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group(const infer_context
 
     Float* obs_cls_hist_list_ptr = obs_response_list.get_mutable_data();
 
-    auto local_size = ctx.max_local_size;
+    auto local_size =  1024;// ctx.max_local_size;
     const sycl::nd_range<2> nd_range =
         be::make_multiple_nd_range_2d({ ctx.row_block_count * local_size, ctx.tree_in_group_count },
                                       { local_size, 1 });
@@ -314,7 +318,7 @@ infer_kernel_impl<Float, Index, Task>::reduce_tree_group_response(
     const pr::ndview<Float, 1>& obs_response_list,
     const be::event_vector& deps) {
     ONEDAL_PROFILER_TASK(reduce_tree_group_response, queue_);
-
+    std::cout << "reduce_tree_group_response()" << std::endl;
     constexpr bool is_classification = std::is_same_v<Task, task::classification>;
 
     Index response_count = ctx.row_count;
@@ -417,7 +421,7 @@ infer_kernel_impl<Float, Index, Task>::determine_winner(const infer_context_t& c
                                                         const pr::ndview<Float, 1>& response_list,
                                                         const be::event_vector& deps) {
     ONEDAL_PROFILER_TASK(determine_winner, queue_);
-
+    std::cout << "determine_winner()" << std::endl;
     ONEDAL_ASSERT(response_list.get_count() == ctx.row_count * ctx.class_count);
     auto winner_list = pr::ndarray<Float, 1>::empty(queue_, { ctx.row_count }, alloc::device);
 
@@ -525,7 +529,7 @@ infer_result<Task> infer_kernel_impl<Float, Index, Task>::operator()(const descr
     if (comm_.get_rank_count() > 1) {
         comm_.wait_for_exception_handling();
     }
-
+    std::cout << "operator() FINISHED" << std::endl;
     return res;
 }
 

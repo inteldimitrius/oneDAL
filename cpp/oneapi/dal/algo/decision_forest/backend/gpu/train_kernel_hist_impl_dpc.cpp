@@ -1833,12 +1833,12 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
     const table& weights) {
     using imp_data_mng_t = impurity_data_manager<Float, Index, Task>;
     using tree_level_record_t = tree_level_record<Float, Index, Task>;
-
+    std::cout << "train operator()" << std::endl;
     validate_input(desc, data, responses);
 
     train_context_t ctx;
     init_params(ctx, desc, data, responses, weights);
-
+    std::cout << "validate_input() init_params() done" << std::endl;
     allocate_buffers(ctx);
 
     result_t res;
@@ -1862,6 +1862,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
     sycl::event last_event;
 
     for (Index iter = 0; iter < ctx.tree_count_; iter += ctx.tree_in_block_) {
+        std::cout << "iter=" << iter << std::endl;
         Index iter_tree_count = std::min(ctx.tree_count_ - iter, ctx.tree_in_block_);
 
         Index node_count = iter_tree_count; // num of potential nodes to split on current tree level
@@ -1932,6 +1933,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                 node_count); // oob_row_count_list and oob_rows_list are the output
             event.wait_and_throw();
         }
+        std::cout << "zero level init done, process trees deeper" << std::endl;
 
         for (Index level = 0; node_count > 0; ++level) {
             auto node_list = level_node_lists[level];
@@ -1949,6 +1951,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                 node_imp_decrease_list =
                     pr::ndarray<Float, 1>::empty(queue_, { node_count }, alloc::device);
             }
+            std::cout << "gen_feature_list() gen_random_thresholds()" << std::endl;
             last_event = compute_best_split(ctx,
                                             full_data_nd_,
                                             response_nd_,
@@ -1965,7 +1968,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                                             node_count,
                                             { last_event });
             last_event.wait_and_throw();
-
+            std::cout << "compute_best_split() done" << std::endl;
             tree_level_record_t level_record(queue_,
                                              node_list,
                                              imp_data_holder.get_data(level),
@@ -2086,7 +2089,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                 .wait_and_throw();
         }
     }
-
+    std::cout << "Finilizing results...";
     // Finalize results
     if (ctx.oob_err_required_ || ctx.oob_err_obs_required_) {
         pr::ndarray<Float, 1> res_oob_err;
@@ -2113,7 +2116,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
         res.set_var_importance(
             homogen_table::wrap(res_var_imp_host.flatten(), 1, ctx.column_count_));
     }
-
+    std::cout << "done" << std::endl;
     return res.set_model(model_manager.get_model());
 }
 
