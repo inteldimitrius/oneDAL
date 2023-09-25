@@ -17,7 +17,7 @@
 #include "oneapi/dal/detail/policy.hpp"
 #include "oneapi/dal/table/row_accessor.hpp"
 #include "oneapi/dal/detail/profiler.hpp"
-
+#include <iostream>
 #include "oneapi/dal/algo/decision_forest/backend/gpu/infer_kernel_impl.hpp"
 
 namespace oneapi::dal::decision_forest::backend {
@@ -130,7 +130,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group_weighted(
 
     Float* obs_cls_hist_list_ptr = obs_response_list.get_mutable_data();
 
-    auto local_size = ctx.max_local_size;
+    auto local_size =  be::device_max_wg_size(queue_); // ctx.max_local_size;
     const sycl::nd_range<2> nd_range =
         be::make_multiple_nd_range_2d({ ctx.row_block_count * local_size, ctx.tree_in_group_count },
                                       { local_size, 1 });
@@ -235,7 +235,7 @@ infer_kernel_impl<Float, Index, Task>::predict_by_tree_group(const infer_context
 
     Float* obs_cls_hist_list_ptr = obs_response_list.get_mutable_data();
 
-    auto local_size = ctx.max_local_size;
+    auto local_size = be::device_max_wg_size(queue_); // ctx.max_local_size;
     const sycl::nd_range<2> nd_range =
         be::make_multiple_nd_range_2d({ ctx.row_block_count * local_size, ctx.tree_in_group_count },
                                       { local_size, 1 });
@@ -337,6 +337,18 @@ infer_kernel_impl<Float, Index, Task>::reduce_tree_group_response(
     const Float* obs_response_list_ptr = obs_response_list.get_data();
     Float* response_list_ptr = response_list.get_mutable_data();
 
+    // Debug info
+    auto obs_response_list_host = obs_response_list.to_host(queue_, deps);
+    auto probs_ptr = obs_response_list_host.get_data();
+    int neg_count = 0;
+    for (int i = 0; i < obs_response_list.get_count(); ++i) {
+        if (probs_ptr[i] < Float(0)) {
+            std::cout << "NEGATIVE: resp_list[" << i << "] = " << probs_ptr[i] << std::endl;
+            neg_count++;
+        }
+        std::cout << "total negative counts: " << neg_count;
+    } 
+    // Debug info end
     const auto local_size = be::device_max_sg_size(queue_);
 
     const sycl::nd_range<1> nd_range =
