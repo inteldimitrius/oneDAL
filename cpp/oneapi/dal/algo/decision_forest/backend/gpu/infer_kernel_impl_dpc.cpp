@@ -482,7 +482,7 @@ infer_result<Task> infer_kernel_impl<Float, Index, Task>::operator()(const descr
     model_manager_t model_mng(queue_, ctx, model);
 
     result_t res;
-
+    std::cout << "infer::OPERATOR() DBG PRINT ==========================" << std::endl;
     const auto data_nd = pr::table2ndarray<Float>(queue_, data, alloc::device);
 
     pr::ndarray<Float, 1> tree_group_response_list;
