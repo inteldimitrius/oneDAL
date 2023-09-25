@@ -252,12 +252,14 @@ private:
         if constexpr (std::is_same_v<task::classification, Task>) {
             node_ptr = allocator_.allocLeaf(ctx_.class_count_);
             node_ptr->response.value = record.get_response(node_idx);
+            if (node_ptr ->response.value < 0) {
+                std::cout << "NEGATIVE RESPONSE" << std::endl;
+            }
         }
         else {
             node_ptr = allocator_.allocLeaf();
             node_ptr->response = record.get_response(node_idx);
         }
-
         node_ptr->count = record.get_row_count(node_idx);
         node_ptr->impurity = record.get_impurity(node_idx);
 

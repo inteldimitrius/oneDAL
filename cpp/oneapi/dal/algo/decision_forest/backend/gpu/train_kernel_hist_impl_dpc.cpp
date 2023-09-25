@@ -21,6 +21,7 @@
 #include "oneapi/dal/algo/decision_forest/backend/gpu/train_helpers.hpp"
 #include "oneapi/dal/algo/decision_forest/backend/gpu/train_node_helpers.hpp"
 
+#include<iostream>
 #ifdef ONEDAL_DATA_PARALLEL
 
 #include "oneapi/dal/algo/decision_forest/backend/gpu/train_kernel_hist_impl.hpp"
@@ -3029,7 +3030,6 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
             if (node_count_new) {
                 //there are split nodes -> next level is required
                 node_count_new *= 2;
-
                 de::check_mul_overflow(node_count_new, impl_const_t::node_prop_count_);
                 auto node_list_new = pr::ndarray<Index, 1>::empty(
                     queue_,
@@ -3094,6 +3094,16 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                         ctx.tree_in_block_,
                         { last_event });
                 }
+            }
+            std::cout << "DEBUG PRINT: --------------" << std::endl;
+            auto node_list_host = node_list.to_host(queue_, {last_event});
+            auto node_host_ptr = node_list_host.get_data();
+            for (int i = 0; i < node_count; ++i) {
+                auto node_ptr = node_host_ptr + i * impl_const_t::node_prop_count_;
+                if constexpr (std::is_same_v<Task, task::classification>)
+                    if (node_ptr[impl_const_t::ind_win] < 0) {
+                        std::cout << "OPA, negative class win." << std::endl;
+                    }
             }
             last_event.wait_and_throw();
             node_count = node_count_new;
