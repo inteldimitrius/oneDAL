@@ -341,12 +341,13 @@ infer_kernel_impl<Float, Index, Task>::reduce_tree_group_response(
     auto obs_response_list_host = obs_response_list.to_host(queue_, deps);
     auto probs_ptr = obs_response_list_host.get_data();
     int neg_count = 0;
+    std::cout << "DEBUG INFO======================" << std::endl;
     for (int i = 0; i < obs_response_list.get_count(); ++i) {
         if (probs_ptr[i] < Float(0)) {
             std::cout << "NEGATIVE: resp_list[" << i << "] = " << probs_ptr[i] << std::endl;
             neg_count++;
         }
-        std::cout << "total negative counts: " << neg_count;
+        std::cout << "total negative counts: " << neg_count << std::endl;
     } 
     // Debug info end
     const auto local_size = be::device_max_sg_size(queue_);
