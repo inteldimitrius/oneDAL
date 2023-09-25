@@ -348,7 +348,7 @@ infer_kernel_impl<Float, Index, Task>::reduce_tree_group_response(
             neg_count++;
         }
         std::cout << "total negative counts: " << neg_count << std::endl;
-    } 
+    }
     // Debug info end
     const auto local_size = be::device_max_sg_size(queue_);
 
