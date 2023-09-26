@@ -3095,16 +3095,6 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                         { last_event });
                 }
             }
-            std::cout << "DEBUG PRINT: --------------" << std::endl;
-            auto node_list_host = node_list.to_host(queue_, {last_event});
-            auto node_host_ptr = node_list_host.get_data();
-            for (int i = 0; i < node_count; ++i) {
-                auto node_ptr = node_host_ptr + i * impl_const_t::node_prop_count_;
-                if constexpr (std::is_same_v<Task, task::classification>)
-                    if (node_ptr[impl_const_t::ind_win] < 0) {
-                        std::cout << "OPA, negative class win." << std::endl;
-                    }
-            }
             last_event.wait_and_throw();
             node_count = node_count_new;
         }

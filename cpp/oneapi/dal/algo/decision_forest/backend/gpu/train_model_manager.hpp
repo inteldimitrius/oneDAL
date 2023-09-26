@@ -267,6 +267,9 @@ private:
             const Index* hist_ptr = record.get_class_hist(node_idx);
             for (Index i = 0; i < ctx_.class_count_; i++) {
                 node_ptr->hist[i] = static_cast<Float>(hist_ptr[i]);
+                if (hist_ptr[i] < 0) {
+                    std::cout << "HIST IS NEGATIVE" << std::endl;
+                }
             }
         }
 
