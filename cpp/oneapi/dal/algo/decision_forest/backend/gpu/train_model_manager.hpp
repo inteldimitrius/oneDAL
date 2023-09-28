@@ -26,6 +26,7 @@
 #include <daal/src/algorithms/dtrees/forest/regression/df_regression_model_impl.h>
 #include <daal/src/algorithms/dtrees/dtrees_predict_dense_default_impl.i>
 
+#include <iostream>
 namespace oneapi::dal::decision_forest::backend {
 
 #ifdef ONEDAL_DATA_PARALLEL
@@ -265,6 +266,9 @@ private:
             const Index* hist_ptr = record.get_class_hist(node_idx);
             for (Index i = 0; i < ctx_.class_count_; i++) {
                 node_ptr->hist[i] = static_cast<Float>(hist_ptr[i]);
+                if (hist_ptr[i] < 0) {
+                    std::cout << "NEGATIVE hisogram" << std::endl;
+                }
             }
         }
 
