@@ -481,10 +481,17 @@ struct split_smp {
                                          split_info_t& bs,
                                          Index* node_ptr,
                                          Index node_id,
-                                         Index index_max) {
+                                         Index index_max,
+                                         Index hist_count) {
         auto sbg = item.get_sub_group();
         const Index sub_group_local_id = sbg.get_local_id();
-
+        bool hist_is_ok = true;
+        for (Index i = 0; i < hist_count; ++i) {
+            if (bs.left_hist[i] < 0 || bs.right_hist[i] < 0) {
+                hist_is_ok = false;
+                break;
+            }
+        }
         const Float best_imp_dec = sycl::reduce_over_group(sbg, bs.imp_dec, maximum<Float>());
 
         const Index imp_dec_is_best = float_eq(best_imp_dec, bs.imp_dec);
@@ -500,7 +507,7 @@ struct split_smp {
             ((impl_const_t::leaf_mark_ == best_ftr_id) && (0 == sub_group_local_id));
         const bool my_split_is_best = (impl_const_t::leaf_mark_ != best_ftr_id &&
                                        bs.ftr_id == best_ftr_id && bs.ftr_bin == best_ftr_val);
-        return (none_split_found_by_sbg || my_split_is_best);
+        return hist_is_ok && (none_split_found_by_sbg || my_split_is_best);
     }
 };
 

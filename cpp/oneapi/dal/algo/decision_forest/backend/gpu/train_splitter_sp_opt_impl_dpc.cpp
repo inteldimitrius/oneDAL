@@ -617,8 +617,12 @@ train_splitter_sp_opt_impl<Float, Bin, Index, Task, sbg_size>::best_split_single
                         bs.load(global_byte_buf_ptr,
                                 sub_group_local_id % ftr_worker_per_node_count,
                                 ftr_worker_per_node_count);
-                        if (sp_hlp
-                                .my_split_is_best_for_sbg(item, bs, node_ptr, node_id, index_max)) {
+                        if (sp_hlp.my_split_is_best_for_sbg(item,
+                                                            bs,
+                                                            node_ptr,
+                                                            node_id,
+                                                            index_max,
+                                                            impl_const_t::hist_prop_count_)) {
                             sp_hlp.update_node_bs_info(bs,
                                                        node_ptr,
                                                        node_imp_decr_list_ptr,
@@ -909,8 +913,12 @@ train_splitter_sp_opt_impl<Float, Bin, Index, Task, sbg_size>::best_split_single
                                              (sub_group_local_id % target_sbg_count) *
                                                  bs.hist_prop_count);
 
-                        if (sp_hlp
-                                .my_split_is_best_for_sbg(item, bs, node_ptr, node_id, index_max)) {
+                        if (sp_hlp.my_split_is_best_for_sbg(item,
+                                                            bs,
+                                                            node_ptr,
+                                                            node_id,
+                                                            index_max,
+                                                            impl_const_t::hist_prop_count_)) {
                             sp_hlp.update_node_bs_info(bs,
                                                        node_ptr,
                                                        node_imp_decr_list_ptr,
