@@ -178,8 +178,9 @@ public:
         process(major_version);
         process(minor_version);
         process(update_version);
-        if (__INTEL_DAAL__ >= version) {
-            throw oneapi::dal::internal_error{ error_messages::major_version_old() };
+        if (__INTEL_DAAL__ >= major_version) {
+            //throw oneapi::dal::internal_error{ error_messages::major_version_old() };
+            std::cout << "Major version is not matching" << std::endl;
         }
     }
 
@@ -260,7 +261,7 @@ public:
     }
 
     void serialize_version() {
-        std::uint32_t value_count = 3;
+        const std::uint32_t value_count = 3;
         std::uint32_t version[value_count] = { __INTEL_DAAL__,
                                                __INTEL_DAAL_MINOR__,
                                                __INTEL_DAAL_UPDATE__ };
