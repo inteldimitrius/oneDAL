@@ -20,6 +20,7 @@
 #include "oneapi/dal/detail/profiler.hpp"
 #include "oneapi/dal/algo/decision_forest/backend/gpu/train_helpers.hpp"
 
+#include <iostream>
 #ifdef ONEDAL_DATA_PARALLEL
 
 #include "oneapi/dal/algo/decision_forest/backend/gpu/train_kernel_hist_impl.hpp"
@@ -1835,11 +1836,14 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
     using tree_level_record_t = tree_level_record<Float, Index, Task>;
 
     validate_input(desc, data, responses);
+    std::cout << "validate_imput() done" << std::endl;
 
     train_context_t ctx;
     init_params(ctx, desc, data, responses, weights);
+    std::cout << "init_params() done" << std::endl;
 
     allocate_buffers(ctx);
+    std::cout << "allocate_buffers() done" << std::endl;
 
     result_t res;
 
@@ -1860,9 +1864,11 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
     pr::ndarray<Float, 1> node_imp_decrease_list;
 
     sycl::event last_event;
+    std::cout << "all preparations are done" << std::endl;
 
     for (Index iter = 0; iter < ctx.tree_count_; iter += ctx.tree_in_block_) {
         Index iter_tree_count = std::min(ctx.tree_count_ - iter, ctx.tree_in_block_);
+        std::cout << "iter=" << iter << ", COMPUTING" << std::endl;
 
         Index node_count = iter_tree_count; // num of potential nodes to split on current tree level
         auto oob_row_count_list =
@@ -1876,7 +1882,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
         imp_data_mng_t imp_data_holder(queue_, ctx);
         // initilizing imp_list and class_hist_list (for classification)
         imp_data_holder.init_new_level(node_count);
-
+        
         de::check_mul_overflow(node_count, impl_const_t::node_prop_count_);
         de::check_mul_overflow(node_count, impl_const_t::node_imp_prop_count_);
         auto node_vs_tree_map_list_host = pr::ndarray<Index, 1>::empty({ node_count });
@@ -1932,8 +1938,9 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                 node_count); // oob_row_count_list and oob_rows_list are the output
             event.wait_and_throw();
         }
-
+        std::cout << "trees initialized and initial histogram is calculated" << std::endl;
         for (Index level = 0; node_count > 0; ++level) {
+            std::cout << "LEVEL=" << level << std::endl;
             auto node_list = level_node_lists[level];
             imp_data_t left_child_imp_data(queue_, ctx, node_count);
 
@@ -1944,7 +1951,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
             auto [random_bins_com, gen_bins_event] =
                 gen_random_thresholds(ctx, node_count, node_vs_tree_map_list, engine_arr);
             gen_bins_event.wait_and_throw();
-
+            std::cout << "random values generated" << std::endl;
             if (ctx.mdi_required_) {
                 node_imp_decrease_list =
                     pr::ndarray<Float, 1>::empty(queue_, { node_count }, alloc::device);
@@ -1965,6 +1972,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                                             node_count,
                                             { last_event });
             last_event.wait_and_throw();
+            std::cout << "compute_best_split() DONE" << std::endl;
 
             tree_level_record_t level_record(queue_,
                                              node_list,
@@ -2065,7 +2073,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
         }
 
         last_event.wait_and_throw();
-
+        std::cout << "ALL LEVELS ARE DONE, adding tree block" << std::endl;
         model_manager.add_tree_block(level_records, bin_borders_host_, iter_tree_count);
 
         for (Index tree_idx = 0; tree_idx < iter_tree_count; ++tree_idx) {
@@ -2086,7 +2094,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
                 .wait_and_throw();
         }
     }
-
+    std::cout << "All TREES are built. Finlizing" << std::endl;
     // Finalize results
     if (ctx.oob_err_required_ || ctx.oob_err_obs_required_) {
         pr::ndarray<Float, 1> res_oob_err;
@@ -2113,7 +2121,7 @@ train_result<Task> train_kernel_hist_impl<Float, Bin, Index, Task>::operator()(
         res.set_var_importance(
             homogen_table::wrap(res_var_imp_host.flatten(), 1, ctx.column_count_));
     }
-
+    std::cout << "Operator() is done" << std::endl;
     return res.set_model(model_manager.get_model());
 }
 
