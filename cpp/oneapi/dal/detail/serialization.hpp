@@ -178,7 +178,7 @@ public:
         process(major_version);
         process(minor_version);
         process(update_version);
-        if (__INTEL_DAAL__ >= major_version) {
+        if (__INTEL_DAAL__ > major_version) {
             //throw oneapi::dal::internal_error{ error_messages::major_version_old() };
             std::cout << "Major version is not matching" << std::endl;
         }
@@ -266,7 +266,7 @@ public:
                                                __INTEL_DAAL_MINOR__,
                                                __INTEL_DAAL_UPDATE__ };
 
-        for (int index = 0; index < value_count; ++index) {
+        for (std::uint32_t index = 0; index < value_count; ++index) {
             process(version[index]);
         }
     }
